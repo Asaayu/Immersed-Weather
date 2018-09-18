@@ -2,7 +2,7 @@
 ===================================================================
 	File: fn_init.sqf
 	Author: Asaayu
-	Description: Loads all this stuff needed for the 
+	Description: Loads all this stuff needed for the
 ===================================================================
 */
 diag_log "IMW - Waiting for player to be loaded";
@@ -45,7 +45,7 @@ imw_restartBreathingScript = {
   };
 };
 
-imw_fnc_escButtons = {
+imw_escButtons = {
   (findDisplay 46) createDisplay "IMW_EmptyDisplay"; //Allow mouse movement
 
   _breathing = (findDisplay 5000) ctrlCreate ['RscButton',5500];
@@ -211,10 +211,10 @@ uisleep 1;
 
 uisleep 1;
 [] spawn {
-  iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_fnc_escButtons }"];
+  iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_escButtons }"];
   if (iwm_optionsKeyhandler isEqualTo -1) then {
     systemChat 'IMW - Options keybind failed to add. Trying Again';
-    iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_fnc_escButtons }"];
+    iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_escButtons }"];
     if (iwm_optionsKeyhandler isEqualTo -1) then {
       systemChat 'IMW - Options keybind failed again. Please let Asaayu know!';
     };
