@@ -45,6 +45,20 @@ imw_restartBreathingScript = {
   };
 };
 
+//Edited Killzone Kid's inHouse function that not only gets if the player is in cover but also how big that cover is
+KK_fnc_inHouse = {
+  _house = objNull;
+  lineIntersectsSurfaces [
+    getPosWorld _this,
+    getPosWorld _this vectorAdd [0, 0, 50],
+    _this, objNull, true, 1, "GEOM", "NONE"
+  ] select 0 params ["","","","_house"];
+  if (_house isKindOf "House") exitWith {
+    _size = selectMax (boundingBox _house select 1);
+    [true,_size]};
+  [false,3]
+};
+
 imw_escButtons = {
   (findDisplay 46) createDisplay "IMW_EmptyDisplay"; //Allow mouse movement
 
@@ -91,69 +105,82 @@ imw_escButtons = {
   _close ctrlSetEventHandler["ButtonClick","(findDisplay 5000) closeDisplay 0"];
 };
 
+imw_playerBreath = {
+  if (cameraView isEqualTo "INTERNAL") then {playSound "IMW_SB_I"}else{player say3D "IMW_SB_E"};
+  _breath = "#particlesource" createVehicleLocal (getpos player);
+  _breath setParticleParams [["A3\Data_F\ParticleEffects\Universal\Universal", 16, 12, 13,0],"","Billboard",0.5,0.5,[0,0,0],[0, 0.1, -0.1],1, 1.275, 1, 0.2,[0, 0.075,0],[[1,1,1, 0.1], [1,1,1, 0.01], [1,1,1, 0]],[1000],1,0,"","",_breath];
+  if ((getFatigue player) > 0.75) then {
+      _breath setParticleRandom [4, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
+    }else{
+      _breath setParticleRandom [2.5, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
+    };
+  _breath setDropInterval 0.0075;
+  _breath attachto [player,[0,0.12,-0.03], "neck"];
+  player setRandomLip true;
+  if ((speed player) > 5 || (getDammage player) > 0.75) then {
+      sleep 0.25;
+    }else{
+      sleep 0.5;
+    };
+  player setRandomLip false;
+  deletevehicle _breath;
+};
+
+imw_playerCough = {
+  _speed = 0.4;
+  playSound "IMW_C";
+  iwm_coughing = true;
+  if (cameraView isEqualTo "INTERNAL") then {addCamShake [5, 2, 5]};
+  {
+    _breath = "#particlesource" createVehicleLocal (getpos player);
+    _breath setParticleParams [["A3\Data_F\ParticleEffects\Universal\Universal", 16, 12, 13,0],"","Billboard",0.5,0.5,[0,0,0],[0, _speed, -0.1],1, 1.275, 1, 0.2,[0, 0.075,0],[[1,1,1, 0.03], [1,1,1, 0.01], [1,1,1, 0]],[1000],1,0,"","",_breath];
+    _breath setParticleRandom [3, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
+    _breath setDropInterval 0.003;
+    _breath attachto [player,[0,0.12,-0.03], "neck"];
+    player setRandomLip true;
+    sleep (_x select 0);
+    player setRandomLip false;
+    deletevehicle _breath;
+    sleep (_x select 1);
+  } forEach [[0.27,0.11],[0.229,0.112],[0.224,0.112],[0.215,0.146],[0.098,0.263],[0.059,2]];
+  iwm_coughing = false;
+};
+
+imw_breathAllowed = {
+  if !( ["shemag", (headGear player)] call BIS_fnc_inString || ["PilotHelmetFighter", (headGear player)] call BIS_fnc_inString || ["CrewHelmetHeli", (headGear player)] call BIS_fnc_inString) then {
+    if !( ["Balaclava", (goggles player)] call BIS_fnc_inString || ["G_Bandanna", (headGear player)] call BIS_fnc_inString ) then {
+      true
+    }else{false};
+  }else{false};
+};
+
 diag_log "IMW - Starting breathing script";
 uiSleep 1;
 //systemChat "IMW - Breathing active.";
 [] spawn {
   while {alive player && !(eyePos player select 2 < 0) && !((speed player) > 25) && diag_fps > 35} do {
-    if (iwm_allowBreathing && (vehicle player) isEqualTo player) then {
+    if (iwm_allowBreathing && (vehicle player) isEqualTo player && (call imw_breathAllowed)) then {
       if ((getFatigue player) > 0.75 || (getDammage player) > 0.75) then {
         sleep 1 + random 1;
-        }else{
+      }else{
         sleep ((5 - (3 * (1 - (getFatigue player)))) + random 2);
-        };
+      };
       if !(iwm_coughing) then {
-            if (cameraView isEqualTo "INTERNAL") then {playSound "IMW_SB_I"}else{player say3D "IMW_SB_E"};
-            _breath = "#particlesource" createVehicleLocal (getpos player);
-            _breath setParticleParams [["A3\Data_F\ParticleEffects\Universal\Universal", 16, 12, 13,0],"","Billboard",0.5,0.5,[0,0,0],[0, 0.1, -0.1],1, 1.275, 1, 0.2,[0, 0.075,0],[[1,1,1, 0.1], [1,1,1, 0.01], [1,1,1, 0]],[1000],1,0,"","",_breath];
-            if ((getFatigue player) > 0.75) then {
-                _breath setParticleRandom [4, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
-              }else{
-                _breath setParticleRandom [2.5, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
-              };
-            _breath setDropInterval 0.0075;
-            _breath attachto [player,[0,0.12,-0.03], "neck"];
-            player setRandomLip true;
-            if ((speed player) > 5 || (getDammage player) > 0.75) then {
-                sleep 0.25;
-              }else{
-                sleep 0.5;
-              };
-            player setRandomLip false;
-            deletevehicle _breath;
+        [] spawn imw_playerBreath;
       };
     };
   };
 };
 
 diag_log "IMW - Starting coughing script";
+
 uiSleep 1;
 //systemChat "IMW - Coughing active.";
 [] spawn {
   while {alive player && !(eyePos player select 2 < 0) && !((speed player) > 25) && iwm_allowCoughing && diag_fps > 35} do {
     sleep (15 + random (1.5*60));
-    if (iwm_allowCoughing && (vehicle player) isEqualTo player) then {
-      if !( ["shemag", (headGear player)] call BIS_fnc_inString || ["PilotHelmetFighter", (headGear player)] call BIS_fnc_inString || ["CrewHelmetHeli", (headGear player)] call BIS_fnc_inString) then {
-        if !( ["Balaclava", (goggles player)] call BIS_fnc_inString || ["G_Bandanna", (headGear player)] call BIS_fnc_inString ) then {
-          _speed = 0.4;
-          playSound "IMW_C";
-          iwm_coughing = true;
-          if (cameraView isEqualTo "INTERNAL") then {addCamShake [5, 2, 5]};
-          {
-            _breath = "#particlesource" createVehicleLocal (getpos player);
-            _breath setParticleParams [["A3\Data_F\ParticleEffects\Universal\Universal", 16, 12, 13,0],"","Billboard",0.5,0.5,[0,0,0],[0, _speed, -0.1],1, 1.275, 1, 0.2,[0, 0.075,0],[[1,1,1, 0.03], [1,1,1, 0.01], [1,1,1, 0]],[1000],1,0,"","",_breath];
-            _breath setParticleRandom [3, [0, 0, 0], [0.04, 0.04, 0.04], 0, 0.5, [0, 0, 0, 0.1], 0, 0, 10];
-            _breath setDropInterval 0.003;
-            _breath attachto [player,[0,0.12,-0.03], "neck"];
-            player setRandomLip true;
-            sleep (_x select 0);
-            player setRandomLip false;
-            deletevehicle _breath;
-            sleep (_x select 1);
-          } forEach [[0.27,0.11],[0.229,0.112],[0.224,0.112],[0.215,0.146],[0.098,0.263],[0.059,2]];
-          iwm_coughing = false;
-        };
-      };
+    if (iwm_allowCoughing && (vehicle player) isEqualTo player && (call imw_breathAllowed)) then {
+      [] spawn imw_playerCough;
     };
   };
 };
@@ -161,19 +188,6 @@ uiSleep 1;
 diag_log "IMW - Starting snow script";
 uisleep 1;
 [] spawn {
-  //Edited Killzone Kid's inHouse function that not only gets if the player is in cover but also how big that cover is
-  KK_fnc_inHouse = {
-    _house = objNull;
-  	lineIntersectsSurfaces [
-  		getPosWorld _this,
-  		getPosWorld _this vectorAdd [0, 0, 50],
-  		_this, objNull, true, 1, "GEOM", "NONE"
-  	] select 0 params ["","","","_house"];
-  	if (_house isKindOf "House") exitWith {
-      _size = selectMax (boundingBox _house select 1);
-      [true,_size]};
-  	[false,3]
-  };
 
   enableEnvironment false;
   [] spawn {
