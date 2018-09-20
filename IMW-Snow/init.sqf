@@ -228,9 +228,14 @@ uisleep 1;
   iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_escButtons }"];
   if (iwm_optionsKeyhandler isEqualTo -1) then {
     systemChat 'IMW - Options keybind failed to add. Trying Again';
-    iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn imw_escButtons }"];
-    if (iwm_optionsKeyhandler isEqualTo -1) then {
-      systemChat 'IMW - Options keybind failed again. Please let Asaayu know!';
+    [] spawn {
+      waitUntil{!(isNull (findDisplay 46))};
+      iwm_optionsKeyhandler = (findDisplay 46) displayAddEventHandler ["KeyDown", "if ((_this select 1) isEqualTo 59 && (_this select 2) && (_this select 3)) then { [] spawn IMW_fnc_escButtons }"];
+      if (iwm_optionsKeyhandler isEqualTo -1) then {
+        systemChat 'IMW - Options keybind failed again. Please let Asaayu know!';
+      }else{
+        systemChat 'IMW - Options keybind (CTRL-SHIFT-F1)';
+      };
     };
   }else{
     systemChat 'IMW - Options keybind (CTRL-SHIFT-F1)';
